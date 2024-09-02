@@ -114,12 +114,12 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
               </button>
             </div>
             <p className="font-medium mt-6 text-lg">Public key</p>
-            <p className="w-[200px] md:w-[400px] truncate overflow-hidden text-ellipsis">
+            <p className="w-[200px] md:w-full truncate overflow-hidden text-ellipsis">
               {keyPair.publicKey}
             </p>
             <p className="font-medium text-lg mt-2">Private key</p>
             <div className="flex justify-between">
-              <p className="w-[200px] md:w-[400px] truncate overflow-hidden text-ellipsis">
+              <p className="w-[200px] md:w-full truncate overflow-hidden text-ellipsis">
                 {keyPair.visible
                   ? keyPair.privateKey
                   : "************************************************************************************"}

@@ -1,6 +1,6 @@
 "use client";
 import React, { useState, useEffect } from "react";
-import { generateMnemonic } from "bip39";
+import { generateMnemonic, validateMnemonic } from "bip39";
 import { FaChevronUp, FaChevronDown, FaCopy, FaTrash } from "react-icons/fa";
 import SolanaWallet from "./SolWallet";
 import { EthWallet } from "./EthWallet";
@@ -14,6 +14,7 @@ const Seed = ({
 }) => {
   const [seedStatus, setSeedStatus] = useState(false);
   const [showMnemonic, setShowMnemonic] = useState(false);
+  const [inputSeed, setInputSeed] = useState("");
 
   useEffect(() => {
     const savedMnemonic = localStorage.getItem("mnemonic");
@@ -43,6 +44,17 @@ const Seed = ({
     setSeedStatus(true);
   };
 
+  const handleImportSeedPhrase = () => {
+    if (validateMnemonic(inputSeed.trim())) {
+      setMnemonic(inputSeed.trim());
+      localStorage.setItem("mnemonic", inputSeed.trim());
+      setSeedStatus(true);
+      setInputSeed(""); // Clear the input field after importing
+    } else {
+      alert("Invalid seed phrase. Please try again.");
+    }
+  };
+
   return (
     <div>
       {!seedStatus ? (
@@ -53,6 +65,22 @@ const Seed = ({
           >
             Generate Seed Phrase
           </button>
+          <h1 className="mt-6 text-semibold">Or</h1>
+          <div className="mt-4">
+            <input
+              type="text"
+              value={inputSeed}
+              onChange={(e) => setInputSeed(e.target.value)}
+              placeholder="Enter your seed phrase"
+              className="border border-gray-400 rounded-lg p-2 w-3/4 md:w-1/2"
+            />
+            <button
+              className="bg-blue-500 text-white hover:bg-blue-600 px-4 py-2 font-semibold rounded-xl ml-2 mt-8 md:ml-4 md:mt-0"
+              onClick={handleImportSeedPhrase}
+            >
+              Import Seed Phrase
+            </button>
+          </div>
         </div>
       ) : (
         <>

@@ -3,10 +3,11 @@ import React, { useState, useEffect } from "react";
 import axios from "axios";
 import { mnemonicToSeedSync } from "bip39";
 import { derivePath } from "ed25519-hd-key";
-import { Keypair } from "@solana/web3.js";
+import { Connection, Keypair } from "@solana/web3.js";
 import nacl from "tweetnacl";
 import bs58 from "bs58";
-import { FaTrash, FaEye, FaEyeSlash } from "react-icons/fa";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { FaEye, FaEyeSlash, FaTrash } from "react-icons/fa";
 
 // Token information interface
 interface Token {
@@ -21,7 +22,7 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
       publicKey: string;
       privateKey: string;
       balance: string;
-      tokens: Token[]; // Add tokens to state
+      tokens: Token[];
       visible: boolean;
     }[]
   >([]);
@@ -35,7 +36,7 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
         parsedWallets.map(async (wallet: any) => ({
           ...wallet,
           balance: await getBalance(wallet.publicKey),
-          tokens: await getTokens(wallet.publicKey), // Fetch tokens
+          tokens: await getTokens(wallet.publicKey),
         }))
       ).then((updatedWallets) => {
         setKeyPairs(updatedWallets);
@@ -51,7 +52,7 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
     const fundedWallets = [];
     for (let i = 0; i < 10; i++) {
       const wallet = await deriveWallet(i);
-      // Only add wallet if balance is greater than 0
+
       if (parseFloat(wallet.balance) > 0) {
         fundedWallets.push(wallet);
       }
@@ -63,7 +64,7 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
 
   const deriveWallet = async (index: number) => {
     const seed = mnemonicToSeedSync(mnemonic);
-    const path = `m/44'/501'/${index}'/0'`; // Correct derivation path for Solana
+    const path = `m/44'/501'/${index}'/0'`;
     const derivedSeed = derivePath(path, seed.toString("hex")).key;
     const keypair = Keypair.fromSecretKey(
       nacl.sign.keyPair.fromSeed(derivedSeed).secretKey
@@ -99,17 +100,43 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
           },
         }
       );
-      return (response.data.result.value / 1e9).toFixed(4).toString(); // Convert from lamports to SOL and ensure it's a string
+      return (response.data.result.value / 1e9).toFixed(4).toString(); //
     } catch (error) {
       console.error("Error fetching balance:", error);
       return "Error";
     }
   };
 
+  interface Token {
+    mintAddress: string;
+    name: string;
+    amount: string;
+  }
+
+  const getTokenMetadataFromList = async (
+    mintAddress: string
+  ): Promise<string> => {
+    try {
+      const tokenListURL = process.env.NEXT_SOL_TOKEN_LIST_API || "";
+      const response = await axios.get(tokenListURL);
+      const tokenList = response.data.tokens;
+
+      const tokenData = tokenList.find(
+        (token: any) => token.address === mintAddress
+      );
+      console.log(tokenData);
+
+      return tokenData ? tokenData.name : "Unknown Token";
+    } catch (error) {
+      console.error("Error fetching token metadata:", error);
+      return "Unknown Token";
+    }
+  };
+
   const getTokens = async (publicKey: string): Promise<Token[]> => {
     try {
       const SOL_API = process.env.NEXT_PUBLIC_SOL_API || "";
-      // Fetch all token accounts for the public key
+      const connection = new Connection(SOL_API);
       const response = await axios.post(
         SOL_API,
         {
@@ -119,7 +146,7 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
           params: [
             publicKey,
             {
-              programId: "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA",
+              programId: TOKEN_PROGRAM_ID.toBase58(),
             },
             {
               encoding: "jsonParsed",
@@ -133,10 +160,8 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
         }
       );
 
-      // Extract token information from the response
       const tokenAccounts = response.data.result.value;
 
-      // Fetch token metadata for each mint address
       const tokensWithMetadata = await Promise.all(
         tokenAccounts.map(async (account: any) => {
           const mintAddress = account.account.data.parsed.info.mint;
@@ -146,35 +171,20 @@ const SolanaWallet = ({ mnemonic }: { mnemonic: string }) => {
             .toFixed(4)
             .toString();
 
-          // Fetch token metadata from an external service
-          const tokenMetadata = await getTokenMetadata(mintAddress);
+          const tokenName = await getTokenMetadataFromList(mintAddress);
 
           return {
             mintAddress,
-            name: tokenMetadata?.name || mintAddress,
+            name: tokenName,
             amount,
           };
         })
       );
 
-      // Filter tokens with balance greater than 0
       return tokensWithMetadata.filter((token) => parseFloat(token.amount) > 0);
     } catch (error) {
       console.error("Error fetching tokens:", error);
       return [];
-    }
-  };
-
-  const getTokenMetadata = async (mintAddress: string) => {
-    try {
-      const METAPLEX_API = process.env.NEXT_PUBLIC_METAPLEX_API || "";
-      const response = await axios.get(
-        `${METAPLEX_API}/metadata/${mintAddress}`
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Error fetching token metadata:", error);
-      return null;
     }
   };
 

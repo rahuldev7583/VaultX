@@ -21,6 +21,7 @@ const Seed = ({
     if (savedMnemonic) {
       setMnemonic(savedMnemonic);
       setSeedStatus(true);
+      setShowMnemonic(false);
     }
   }, [setMnemonic]);
 
@@ -42,6 +43,7 @@ const Seed = ({
     setMnemonic(mn);
     localStorage.setItem("mnemonic", mn);
     setSeedStatus(true);
+    setShowMnemonic(false);
   };
 
   const handleImportSeedPhrase = () => {
@@ -49,7 +51,8 @@ const Seed = ({
       setMnemonic(inputSeed.trim());
       localStorage.setItem("mnemonic", inputSeed.trim());
       setSeedStatus(true);
-      setInputSeed(""); // Clear the input field after importing
+      setInputSeed("");
+      setShowMnemonic(false);
     } else {
       alert("Invalid seed phrase. Please try again.");
     }
@@ -68,7 +71,7 @@ const Seed = ({
           <h1 className="mt-6 text-semibold">Or</h1>
           <div className="mt-4">
             <input
-              type="text"
+              type="password"
               value={inputSeed}
               onChange={(e) => setInputSeed(e.target.value)}
               placeholder="Enter your seed phrase"

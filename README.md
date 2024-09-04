@@ -21,7 +21,9 @@ Clone the repository: git clone https://github.com/rahuldev7583/vaultx.git
 Create a .env.local file in the root directory of the project and add the following environment variables:
 
 NEXT_PUBLIC_SOL_API="SOLANA_API"
+
 NEXT_PUBLIC_ETH_API="ETHEREUM_API"
+
 NEXT_SOL_TOKEN_LIST_API="https://raw.githubusercontent.com/solana-labs/token-list/main/src/tokens/solana.tokenlist.json"
 
 Install dependencies: pnpm install
